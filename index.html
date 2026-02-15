@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="A modern task management dashboard with calendar view, time tracking, and productivity analytics. Organize your tasks efficiently." />
+    <meta name="keywords" content="task management, todo list, productivity, calendar, time tracking" />
+    <meta name="author" content="Smart Task Dashboard" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Smart Task Dashboard - Your Personal Productivity Hub" />
+    <meta property="og:description" content="A modern task management dashboard with calendar view, time tracking, and productivity analytics." />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:title" content="Smart Task Dashboard - Your Personal Productivity Hub" />
+    <meta property="twitter:description" content="A modern task management dashboard with calendar view, time tracking, and productivity analytics." />
+    
+    <title>Smart Task Dashboard - Your Personal Productivity Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+    <script src="assets/js/env.js" defer></script>
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body class="bg-gray-50">
+    <!-- Header -->
+    <header
+      class="bg-white shadow-sm border-b dark:bg-slate-800 dark:border-slate-700"
+    >
+      <div class="container mx-auto px-4 py-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <i class="fas fa-rocket text-3xl text-purple-600"></i>
+            <div>
+              <h1 class="text-2xl font-bold text-gray-800 dark:text-white">
+                Smart Task Dashboard
+              </h1>
+              <p class="text-sm text-gray-500 dark:text-gray-400">
+                Your Personal Productivity Hub
+              </p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            <button
+              id="darkModeToggle"
+              class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700"
+            >
+              <i class="fas fa-moon text-xl"></i>
+            </button>
+            <button
+              id="searchBtn"
+              class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700"
+            >
+              <i class="fas fa-search text-xl"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Search Bar -->
+    <div id="searchBar" class="hidden container mx-auto px-4 mt-4">
+      <input
+        type="text"
+        id="searchInput"
+        placeholder="Search tasks..."
+        class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-purple-500 focus:outline-none"
+      />
+    </div>
+
+    <!-- Main Container -->
+    <div class="container mx-auto px-4 py-6">
+      <!-- Dashboard Summary -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="stat-card purple">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm opacity-90">Total Tasks</span>
+            <i class="fas fa-tasks text-2xl opacity-75"></i>
+          </div>
+          <div class="text-3xl font-bold" id="totalTasks">0</div>
+        </div>
+        <div class="stat-card green">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm opacity-90">Completed Today</span>
+            <i class="fas fa-check-circle text-2xl opacity-75"></i>
+          </div>
+          <div class="text-3xl font-bold" id="completedToday">0</div>
+        </div>
+        <div class="stat-card red">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm opacity-90">Overdue Tasks</span>
+            <i class="fas fa-exclamation-circle text-2xl opacity-75"></i>
+          </div>
+          <div class="text-3xl font-bold" id="overdueTasks">0</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm opacity-90">Productivity Score</span>
+            <i class="fas fa-chart-line text-2xl opacity-75"></i>
+          </div>
+          <div class="text-3xl font-bold" id="productivityScore">0%</div>
+        </div>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4 mb-6">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-sm font-semibold text-gray-700 dark:text-gray-300"
+            >Overall Progress</span
+          >
+          <span class="text-sm font-bold text-purple-600" id="progressText"
+            >0%</span
+          >
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- Add Task Button -->
+      <div class="flex justify-center mb-6">
+        <button
+          id="addTaskBtn"
+          class="bg-gradient-to-r from-purple-600 to-purple-800 text-white px-8 py-4 rounded-full font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex items-center space-x-2"
+        >
+          <i class="fas fa-plus"></i>
+          <span>Add New Task</span>
+        </button>
+      </div>
+
+      <!-- Filter Tabs -->
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4 mb-6">
+        <div class="flex flex-wrap gap-2">
+          <button class="filter-btn active" data-filter="all">
+            <i class="fas fa-list mr-2"></i>All Tasks
+          </button>
+          <button class="filter-btn" data-filter="today">
+            <i class="fas fa-calendar-day mr-2"></i>Today
+          </button>
+          <button class="filter-btn" data-filter="high">
+            <i class="fas fa-fire mr-2"></i>High Priority
+          </button>
+          <button class="filter-btn" data-filter="overdue">
+            <i class="fas fa-exclamation-triangle mr-2"></i>Overdue
+          </button>
+          <button class="filter-btn" data-filter="completed">
+            <i class="fas fa-check mr-2"></i>Completed
+          </button>
+          <button class="filter-btn" data-filter="work">
+            <i class="fas fa-briefcase mr-2"></i>Work
+          </button>
+          <button class="filter-btn" data-filter="personal">
+            <i class="fas fa-user mr-2"></i>Personal
+          </button>
+          <button class="filter-btn" data-filter="school">
+            <i class="fas fa-graduation-cap mr-2"></i>School
+          </button>
+          <button class="filter-btn" data-filter="calendar">
+            <i class="fas fa-calendar-alt mr-2"></i>Calendar View
+          </button>
+        </div>
+      </div>
+
+      <!-- Task List -->
+      <div id="taskListView">
+        <div id="taskList" class="space-y-3">
+          <!-- Tasks will be dynamically added here -->
+        </div>
+        <div id="emptyState" class="text-center py-12 hidden">
+          <i class="fas fa-inbox text-6xl text-gray-300 mb-4"></i>
+          <p class="text-gray-500 text-lg">
+            No tasks found. Start by adding your first task!
+          </p>
+        </div>
+      </div>
+
+      <!-- Calendar View -->
+      <div id="calendarView" class="hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+          <div class="flex items-center justify-between mb-4">
+            <button
+              id="prevMonth"
+              class="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded"
+            >
+              <i class="fas fa-chevron-left"></i>
+            </button>
+            <h2 class="text-xl font-bold" id="calendarMonth"></h2>
+            <button
+              id="nextMonth"
+              class="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded"
+            >
+              <i class="fas fa-chevron-right"></i>
+            </button>
+          </div>
+          <div class="grid grid-cols-7 gap-1 mb-2">
+            <div class="text-center font-semibold text-sm">Sun</div>
+            <div class="text-center font-semibold text-sm">Mon</div>
+            <div class="text-center font-semibold text-sm">Tue</div>
+            <div class="text-center font-semibold text-sm">Wed</div>
+            <div class="text-center font-semibold text-sm">Thu</div>
+            <div class="text-center font-semibold text-sm">Fri</div>
+            <div class="text-center font-semibold text-sm">Sat</div>
+          </div>
+          <div id="calendarGrid" class="grid grid-cols-7 gap-1">
+            <!-- Calendar days will be generated here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Archive Section -->
+      <div class="mt-6">
+        <button
+          id="archiveToggle"
+          class="text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 flex items-center space-x-2"
+        >
+          <i class="fas fa-archive"></i>
+          <span>View Archive (<span id="archiveCount">0</span>)</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Add/Edit Task Modal -->
+    <div id="taskModal" class="modal">
+      <div class="modal-content scrollbar-thin">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-2xl font-bold" id="modalTitle">Add New Task</h2>
+          <button
+            id="closeModal"
+            class="text-gray-500 hover:text-gray-700 text-2xl"
+          >
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <form id="taskForm">
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-semibold mb-2"
+                >Task Title *</label
+              >
+              <input
+                type="text"
+                id="taskTitle"
+                required
+                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold mb-2"
+                >Description</label
+              >
+              <textarea
+                id="taskDescription"
+                rows="3"
+                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
+              ></textarea>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold mb-2"
+                  >Start Date *</label
+                >
+                <input
+                  type="date"
+                  id="startDate"
+                  required
+                  class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold mb-2"
+                  >Start Time</label
+                >
+                <input
+                  type="time"
+                  id="startTime"
+                  class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold mb-2"
+                  >Due Date *</label
+                >
+                <input
+                  type="date"
+                  id="dueDate"
+                  required
+                  class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold mb-2"
+                  >Category *</label
+                >
+                <select
+                  id="category"
+                  required
+                  class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                >
+                  <option value="work">Work</option>
+                  <option value="personal">Personal</option>
+                  <option value="school">School</option>
+                  <option value="health">Health</option>
+                  <option value="finance">Finance</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold mb-2"
+                  >Priority *</label
+                >
+                <select
+                  id="priority"
+                  required
+                  class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold mb-2">Status *</label>
+                <select
+                  id="status"
+                  required
+                  class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                >
+                  <option value="pending">Pending</option>
+                  <option value="progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold mb-2"
+                >Tags (comma-separated)</label
+              >
+              <input
+                type="text"
+                id="tags"
+                placeholder="e.g. urgent, client, review"
+                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold mb-2">Subtasks</label>
+              <div id="subtaskList" class="space-y-2 mb-2">
+                <!-- Subtasks will be added here -->
+              </div>
+              <button
+                type="button"
+                id="addSubtask"
+                class="text-purple-600 hover:text-purple-700 text-sm flex items-center space-x-1"
+              >
+                <i class="fas fa-plus-circle"></i>
+                <span>Add Subtask</span>
+              </button>
+            </div>
+
+            <div class="flex items-center space-x-2">
+              <input type="checkbox" id="enableReminder" class="w-4 h-4" />
+              <label for="enableReminder" class="text-sm"
+                >Enable reminder (1 hour before due)</label
+              >
+            </div>
+          </div>
+
+          <div class="flex space-x-3 mt-6">
+            <button
+              type="submit"
+              class="flex-1 bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700 transition"
+            >
+              <i class="fas fa-save mr-2"></i>Save Task
+            </button>
+            <button
+              type="button"
+              id="cancelBtn"
+              class="px-6 py-3 border-2 border-gray-300 rounded-lg font-semibold hover:bg-gray-50 transition"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Task Detail Modal -->
+    <div id="taskDetailModal" class="modal">
+      <div class="modal-content scrollbar-thin">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-2xl font-bold" id="detailTaskTitle"></h2>
+          <button
+            id="closeDetailModal"
+            class="text-gray-500 hover:text-gray-700 text-2xl"
+          >
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div id="taskDetailContent">
+          <!-- Task details will be shown here -->
+        </div>
+        <div class="flex space-x-3 mt-6">
+          <button
+            id="editTaskBtn"
+            class="flex-1 bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700"
+          >
+            <i class="fas fa-edit mr-2"></i>Edit
+          </button>
+          <button
+            id="deleteTaskBtn"
+            class="px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700"
+          >
+            <i class="fas fa-trash mr-2"></i>Delete
+          </button>
+          <button
+            id="archiveTaskBtn"
+            class="px-6 py-3 border-2 border-gray-300 rounded-lg font-semibold hover:bg-gray-50"
+          >
+            <i class="fas fa-archive mr-2"></i>Archive
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="assets/js/app.js" defer></script>
+  </body>
+</html>
