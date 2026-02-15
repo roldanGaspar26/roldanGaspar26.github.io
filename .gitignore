@@ -1,2 +1,4 @@
 .env
+assets/js/env.js
 node_modules
+scripts/generate-env.js
