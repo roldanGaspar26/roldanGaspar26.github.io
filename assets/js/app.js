@@ -458,15 +458,10 @@
         const authModal = document.getElementById("authModal");
         const closeAuthModal = document.getElementById("closeAuthModal");
         const authForm = document.getElementById("authForm");
-        const loginTab = document.getElementById("loginTab");
-        const signupTab = document.getElementById("signupTab");
-        const googleAuthBtn = document.getElementById("googleAuthBtn");
-        const githubAuthBtn = document.getElementById("githubAuthBtn");
 
         if (loginBtn) {
           loginBtn.addEventListener("click", () => {
             isLoginMode = true;
-            switchToLoginTab();
             authModal.classList.add("active");
           });
         }
@@ -490,7 +485,6 @@
             document.getElementById("authError").classList.add("hidden");
             authForm.reset();
             isLoginMode = true;
-            switchToLoginTab();
           });
         }
 
@@ -503,14 +497,7 @@
 
             try {
               errorDiv.classList.add("hidden");
-              
-              if (isLoginMode) {
-                await signIn(email, password);
-              } else {
-                await signUp(email, password);
-                alert("Account created! Please check your email to verify your account, then login.");
-              }
-              
+              await signIn(email, password);
               authModal.classList.remove("active");
               authForm.reset();
               await checkAuthState();
@@ -519,46 +506,7 @@
                 await loadRemoteTasks();
               }
             } catch (error) {
-              errorDiv.textContent = error.message || "Authentication failed";
-              errorDiv.classList.remove("hidden");
-            }
-          });
-        }
-
-        // Tab switching
-        if (loginTab) {
-          loginTab.addEventListener("click", () => {
-            isLoginMode = true;
-            switchToLoginTab();
-          });
-        }
-
-        if (signupTab) {
-          signupTab.addEventListener("click", () => {
-            isLoginMode = false;
-            switchToSignupTab();
-          });
-        }
-
-        if (googleAuthBtn) {
-          googleAuthBtn.addEventListener("click", async () => {
-            try {
-              await signInWithOAuth("google");
-            } catch (error) {
-              const errorDiv = document.getElementById("authError");
-              errorDiv.textContent = error.message || "OAuth sign-in failed";
-              errorDiv.classList.remove("hidden");
-            }
-          });
-        }
-
-        if (githubAuthBtn) {
-          githubAuthBtn.addEventListener("click", async () => {
-            try {
-              await signInWithOAuth("github");
-            } catch (error) {
-              const errorDiv = document.getElementById("authError");
-              errorDiv.textContent = error.message || "OAuth sign-in failed";
+              errorDiv.textContent = error.message || "Login failed. Please check your credentials.";
               errorDiv.classList.remove("hidden");
             }
           });
@@ -572,46 +520,9 @@
               document.getElementById("authError").classList.add("hidden");
               authForm.reset();
               isLoginMode = true;
-              switchToLoginTab();
             }
           });
         }
-      }
-
-      function switchToLoginTab() {
-        const loginTab = document.getElementById("loginTab");
-        const signupTab = document.getElementById("signupTab");
-        const submitText = document.getElementById("authSubmitText");
-
-        if (loginTab) {
-          loginTab.classList.add("active");
-          loginTab.classList.remove("text-gray-500", "dark:text-gray-400");
-          loginTab.classList.add("text-purple-600", "dark:text-purple-400", "border-b-2", "border-purple-600", "dark:border-purple-400");
-        }
-        if (signupTab) {
-          signupTab.classList.remove("active");
-          signupTab.classList.remove("text-purple-600", "dark:text-purple-400", "border-b-2", "border-purple-600", "dark:border-purple-400");
-          signupTab.classList.add("text-gray-500", "dark:text-gray-400");
-        }
-        if (submitText) submitText.textContent = "Login";
-      }
-
-      function switchToSignupTab() {
-        const loginTab = document.getElementById("loginTab");
-        const signupTab = document.getElementById("signupTab");
-        const submitText = document.getElementById("authSubmitText");
-
-        if (signupTab) {
-          signupTab.classList.add("active");
-          signupTab.classList.remove("text-gray-500", "dark:text-gray-400");
-          signupTab.classList.add("text-purple-600", "dark:text-purple-400", "border-b-2", "border-purple-600", "dark:border-purple-400");
-        }
-        if (loginTab) {
-          loginTab.classList.remove("active");
-          loginTab.classList.remove("text-purple-600", "dark:text-purple-400", "border-b-2", "border-purple-600", "dark:border-purple-400");
-          loginTab.classList.add("text-gray-500", "dark:text-gray-400");
-        }
-        if (submitText) submitText.textContent = "Sign Up";
       }
 
       function handleTaskSubmit(e) {

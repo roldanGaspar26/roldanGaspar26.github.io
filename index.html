@@ -462,7 +462,7 @@
     <div id="authModal" class="modal">
       <div class="modal-content auth-modal-content">
         <div class="flex items-center justify-between mb-6">
-          <h2 class="text-2xl font-bold dark:text-white">Account Access</h2>
+          <h2 class="text-2xl font-bold dark:text-white">Login</h2>
           <button
             id="closeAuthModal"
             class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-2xl transition"
@@ -471,22 +471,6 @@
           </button>
         </div>
         
-        <!-- Tab Navigation -->
-        <div class="flex border-b border-gray-200 dark:border-gray-700 mb-6">
-          <button
-            id="loginTab"
-            class="auth-tab active flex-1 py-3 px-4 text-center font-semibold text-purple-600 dark:text-purple-400 border-b-2 border-purple-600 dark:border-purple-400 transition"
-          >
-            <i class="fas fa-sign-in-alt mr-2"></i>Login
-          </button>
-          <button
-            id="signupTab"
-            class="auth-tab flex-1 py-3 px-4 text-center font-semibold text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition"
-          >
-            <i class="fas fa-user-plus mr-2"></i>Sign Up
-          </button>
-        </div>
-
         <div id="authError" class="hidden mb-4 p-3 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-300 rounded-lg text-sm"></div>
         
         <form id="authForm">
@@ -511,7 +495,7 @@
                   required
                   minlength="6"
                   class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none dark:bg-gray-700 dark:text-white transition"
-                  placeholder="Minimum 6 characters"
+                  placeholder="Enter your password"
                 />
               </div>
             </div>
@@ -522,36 +506,8 @@
               id="authSubmitBtn"
               class="w-full bg-gradient-to-r from-purple-600 to-purple-800 text-white py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-purple-900 transition transform hover:scale-[1.02] shadow-lg hover:shadow-xl"
             >
-              <i class="fas fa-sign-in-alt mr-2"></i><span id="authSubmitText">Login</span>
+              <i class="fas fa-sign-in-alt mr-2"></i>Login
             </button>
-
-            <!-- Divider -->
-            <div class="relative my-6">
-              <div class="absolute inset-0 flex items-center">
-                <div class="w-full border-t border-gray-300 dark:border-gray-600"></div>
-              </div>
-              <div class="relative flex justify-center text-sm">
-                <span class="px-4 bg-white dark:bg-slate-800 text-gray-500 dark:text-gray-400">Or continue with</span>
-              </div>
-            </div>
-              
-            <!-- OAuth Buttons -->
-            <div class="flex flex-col sm:flex-row gap-3">
-              <button
-                type="button"
-                id="googleAuthBtn"
-                class="flex-1 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 py-3 rounded-lg font-semibold hover:bg-gray-50 dark:hover:bg-gray-600 transition transform hover:scale-[1.02] flex items-center justify-center shadow hover:shadow-md"
-              >
-                <i class="fab fa-google mr-2 text-lg"></i>Google
-              </button>
-              <button
-                type="button"
-                id="githubAuthBtn"
-                class="flex-1 bg-gray-800 dark:bg-gray-900 text-white py-3 rounded-lg font-semibold hover:bg-gray-900 dark:hover:bg-black transition transform hover:scale-[1.02] flex items-center justify-center shadow hover:shadow-md"
-              >
-                <i class="fab fa-github mr-2 text-lg"></i>GitHub
-              </button>
-            </div>
           </div>
         </form>
       </div>
