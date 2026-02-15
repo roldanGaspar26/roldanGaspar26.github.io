@@ -458,14 +458,15 @@
         const authModal = document.getElementById("authModal");
         const closeAuthModal = document.getElementById("closeAuthModal");
         const authForm = document.getElementById("authForm");
-        const authToggleBtn = document.getElementById("authToggleBtn");
+        const loginTab = document.getElementById("loginTab");
+        const signupTab = document.getElementById("signupTab");
         const googleAuthBtn = document.getElementById("googleAuthBtn");
         const githubAuthBtn = document.getElementById("githubAuthBtn");
 
         if (loginBtn) {
           loginBtn.addEventListener("click", () => {
             isLoginMode = true;
-            updateAuthModal();
+            switchToLoginTab();
             authModal.classList.add("active");
           });
         }
@@ -488,6 +489,8 @@
             authModal.classList.remove("active");
             document.getElementById("authError").classList.add("hidden");
             authForm.reset();
+            isLoginMode = true;
+            switchToLoginTab();
           });
         }
 
@@ -522,10 +525,18 @@
           });
         }
 
-        if (authToggleBtn) {
-          authToggleBtn.addEventListener("click", () => {
-            isLoginMode = !isLoginMode;
-            updateAuthModal();
+        // Tab switching
+        if (loginTab) {
+          loginTab.addEventListener("click", () => {
+            isLoginMode = true;
+            switchToLoginTab();
+          });
+        }
+
+        if (signupTab) {
+          signupTab.addEventListener("click", () => {
+            isLoginMode = false;
+            switchToSignupTab();
           });
         }
 
@@ -560,29 +571,47 @@
               authModal.classList.remove("active");
               document.getElementById("authError").classList.add("hidden");
               authForm.reset();
+              isLoginMode = true;
+              switchToLoginTab();
             }
           });
         }
       }
 
-      function updateAuthModal() {
-        const modalTitle = document.getElementById("authModalTitle");
-        const submitBtn = document.getElementById("authSubmitBtn");
+      function switchToLoginTab() {
+        const loginTab = document.getElementById("loginTab");
+        const signupTab = document.getElementById("signupTab");
         const submitText = document.getElementById("authSubmitText");
-        const toggleText = document.getElementById("authToggleText");
-        const toggleBtn = document.getElementById("authToggleBtn");
 
-        if (isLoginMode) {
-          if (modalTitle) modalTitle.textContent = "Login";
-          if (submitText) submitText.textContent = "Login";
-          if (toggleText) toggleText.textContent = "Don't have an account?";
-          if (toggleBtn) toggleBtn.textContent = "Sign up";
-        } else {
-          if (modalTitle) modalTitle.textContent = "Sign Up";
-          if (submitText) submitText.textContent = "Sign Up";
-          if (toggleText) toggleText.textContent = "Already have an account?";
-          if (toggleBtn) toggleBtn.textContent = "Login";
+        if (loginTab) {
+          loginTab.classList.add("active");
+          loginTab.classList.remove("text-gray-500", "dark:text-gray-400");
+          loginTab.classList.add("text-purple-600", "dark:text-purple-400", "border-b-2", "border-purple-600", "dark:border-purple-400");
         }
+        if (signupTab) {
+          signupTab.classList.remove("active");
+          signupTab.classList.remove("text-purple-600", "dark:text-purple-400", "border-b-2", "border-purple-600", "dark:border-purple-400");
+          signupTab.classList.add("text-gray-500", "dark:text-gray-400");
+        }
+        if (submitText) submitText.textContent = "Login";
+      }
+
+      function switchToSignupTab() {
+        const loginTab = document.getElementById("loginTab");
+        const signupTab = document.getElementById("signupTab");
+        const submitText = document.getElementById("authSubmitText");
+
+        if (signupTab) {
+          signupTab.classList.add("active");
+          signupTab.classList.remove("text-gray-500", "dark:text-gray-400");
+          signupTab.classList.add("text-purple-600", "dark:text-purple-400", "border-b-2", "border-purple-600", "dark:border-purple-400");
+        }
+        if (loginTab) {
+          loginTab.classList.remove("active");
+          loginTab.classList.remove("text-purple-600", "dark:text-purple-400", "border-b-2", "border-purple-600", "dark:border-purple-400");
+          loginTab.classList.add("text-gray-500", "dark:text-gray-400");
+        }
+        if (submitText) submitText.textContent = "Sign Up";
       }
 
       function handleTaskSubmit(e) {
