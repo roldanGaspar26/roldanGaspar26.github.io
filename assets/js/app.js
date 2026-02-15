@@ -8,6 +8,11 @@
 
       let supabaseClient = null;
 
+      // Authentication state
+      let currentUser = null;
+      let isAuthenticated = false;
+      let isLoginMode = true; // true for login, false for register
+
       // Data structure
       let tasks = [];
       let archivedTasks = [];
@@ -17,14 +22,30 @@
       let calendarDate = new Date();
 
       // Initialize
-      document.addEventListener("DOMContentLoaded", () => {
-        loadLocalData();
+      document.addEventListener("DOMContentLoaded", async () => {
         setTodayDate();
-        renderTasks();
-        updateDashboard();
         setupEventListeners();
         initSupabase();
-        loadRemoteTasks();
+        
+        // Handle OAuth callback
+        if (supabaseClient) {
+          const { data: { session } } = await supabaseClient.auth.getSession();
+          if (session) {
+            currentUser = session.user;
+            isAuthenticated = true;
+          }
+        }
+        
+        await checkAuthState();
+        // Load data based on auth status
+        if (isAuthenticated) {
+          await loadRemoteTasks();
+        } else {
+          loadLocalData();
+        }
+        renderTasks();
+        updateDashboard();
+        updateAuthUI();
         checkReminders();
         setInterval(checkReminders, 60000); // Check every minute
       });
@@ -43,9 +64,156 @@
 
         supabaseClient = window.supabase.createClient(
           SUPABASE_URL,
-          SUPABASE_ANON_KEY
+          SUPABASE_ANON_KEY,
+          {
+            auth: {
+              persistSession: true,
+              autoRefreshToken: true,
+            }
+          }
         );
+
+        // Listen for auth state changes
+        supabaseClient.auth.onAuthStateChange((event, session) => {
+          if (event === 'SIGNED_IN') {
+            currentUser = session?.user || null;
+            isAuthenticated = !!session;
+            updateAuthUI();
+            if (session) {
+              loadRemoteTasks();
+            }
+          } else if (event === 'SIGNED_OUT') {
+            currentUser = null;
+            isAuthenticated = false;
+            updateAuthUI();
+            // Switch back to local storage
+            loadLocalData();
+            renderTasks();
+            updateDashboard();
+          } else if (event === 'TOKEN_REFRESHED') {
+            currentUser = session?.user || null;
+            isAuthenticated = !!session;
+          }
+        });
+
         return supabaseClient;
+      }
+
+      // Authentication Functions
+      async function checkAuthState() {
+        if (!supabaseClient) {
+          isAuthenticated = false;
+          currentUser = null;
+          return;
+        }
+
+        try {
+          const { data: { session }, error } = await supabaseClient.auth.getSession();
+          if (error) {
+            console.error("Error checking auth state:", error);
+            isAuthenticated = false;
+            currentUser = null;
+            return;
+          }
+
+          if (session) {
+            currentUser = session.user;
+            isAuthenticated = true;
+          } else {
+            currentUser = null;
+            isAuthenticated = false;
+          }
+        } catch (error) {
+          console.error("Error checking auth state:", error);
+          isAuthenticated = false;
+          currentUser = null;
+        }
+      }
+
+      async function getCurrentUser() {
+        if (!supabaseClient) return null;
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        return user;
+      }
+
+      async function signUp(email, password) {
+        if (!supabaseClient) {
+          throw new Error("Supabase is not configured");
+        }
+
+        const { data, error } = await supabaseClient.auth.signUp({
+          email,
+          password,
+        });
+
+        if (error) throw error;
+        return data;
+      }
+
+      async function signIn(email, password) {
+        if (!supabaseClient) {
+          throw new Error("Supabase is not configured");
+        }
+
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) throw error;
+        return data;
+      }
+
+      async function signInWithOAuth(provider) {
+        if (!supabaseClient) {
+          throw new Error("Supabase is not configured");
+        }
+
+        const { data, error } = await supabaseClient.auth.signInWithOAuth({
+          provider: provider, // 'google' or 'github'
+          options: {
+            redirectTo: window.location.origin + window.location.pathname,
+          }
+        });
+
+        if (error) throw error;
+        return data;
+      }
+
+      async function signOut() {
+        if (!supabaseClient) {
+          return;
+        }
+
+        const { error } = await supabaseClient.auth.signOut();
+        if (error) {
+          console.error("Error signing out:", error);
+          throw error;
+        }
+
+        currentUser = null;
+        isAuthenticated = false;
+        updateAuthUI();
+      }
+
+      function updateAuthUI() {
+        const loginBtn = document.getElementById("loginBtn");
+        const userMenu = document.getElementById("userMenu");
+        const authStatus = document.getElementById("authStatus");
+        const userEmail = document.getElementById("userEmail");
+
+        if (isAuthenticated && currentUser) {
+          // Show user menu, hide login button
+          if (loginBtn) loginBtn.classList.add("hidden");
+          if (userMenu) userMenu.classList.remove("hidden");
+          if (authStatus) authStatus.classList.remove("hidden");
+          if (userEmail) userEmail.textContent = currentUser.email || "User";
+        } else {
+          // Show login button, hide user menu
+          if (loginBtn) loginBtn.classList.remove("hidden");
+          if (userMenu) userMenu.classList.add("hidden");
+          if (authStatus) authStatus.classList.add("hidden");
+        }
       }
 
       function loadLocalData() {
@@ -62,18 +230,35 @@
       }
 
       async function loadRemoteTasks() {
-        if (!supabaseClient) return;
+        if (!supabaseClient || !isAuthenticated || !currentUser) {
+          return;
+        }
+
+        const userId = currentUser.id;
 
         const { data, error } = await supabaseClient
           .from(SUPABASE_TABLE)
           .select("tasks, archived_tasks")
-          .eq("id", SUPABASE_ROW_ID)
+          .eq("user_id", userId)
           .single();
 
         if (error) {
           // PGRST116 means no rows returned; ignore so we can create on first save.
           if (error.code !== "PGRST116") {
             console.error("Supabase load failed", error.message);
+          }
+          // Check if we have local data to migrate
+          const localTasks = localStorage.getItem("tasks");
+          const localArchived = localStorage.getItem("archivedTasks");
+          if (localTasks || localArchived) {
+            // Offer to migrate local data
+            const shouldMigrate = confirm(
+              "You have local tasks. Would you like to import them to your cloud account?"
+            );
+            if (shouldMigrate) {
+              loadLocalData();
+              await persistTasksToSupabase();
+            }
           }
           return;
         }
@@ -82,6 +267,7 @@
           // Validate data structure
           tasks = Array.isArray(data.tasks) ? data.tasks : [];
           archivedTasks = Array.isArray(data.archived_tasks) ? data.archived_tasks : [];
+          // Also save to localStorage as backup
           localStorage.setItem("tasks", JSON.stringify(tasks));
           localStorage.setItem(
             "archivedTasks",
@@ -93,10 +279,14 @@
       }
 
       async function persistTasksToSupabase() {
-        if (!supabaseClient) return;
+        if (!supabaseClient || !isAuthenticated || !currentUser) {
+          return;
+        }
+
+        const userId = currentUser.id;
 
         const payload = {
-          id: SUPABASE_ROW_ID,
+          user_id: userId,
           tasks,
           archived_tasks: archivedTasks,
           updated_at: new Date().toISOString(),
@@ -104,7 +294,7 @@
 
         const { error } = await supabaseClient
           .from(SUPABASE_TABLE)
-          .upsert(payload, { onConflict: "id" });
+          .upsert(payload, { onConflict: "user_id" });
 
         if (error) {
           console.error("Supabase save failed", error.message);
@@ -261,6 +451,138 @@
               .getElementById("taskDetailModal")
               .classList.remove("active");
           });
+
+        // Authentication event listeners
+        const loginBtn = document.getElementById("loginBtn");
+        const logoutBtn = document.getElementById("logoutBtn");
+        const authModal = document.getElementById("authModal");
+        const closeAuthModal = document.getElementById("closeAuthModal");
+        const authForm = document.getElementById("authForm");
+        const authToggleBtn = document.getElementById("authToggleBtn");
+        const googleAuthBtn = document.getElementById("googleAuthBtn");
+        const githubAuthBtn = document.getElementById("githubAuthBtn");
+
+        if (loginBtn) {
+          loginBtn.addEventListener("click", () => {
+            isLoginMode = true;
+            updateAuthModal();
+            authModal.classList.add("active");
+          });
+        }
+
+        if (logoutBtn) {
+          logoutBtn.addEventListener("click", async () => {
+            try {
+              await signOut();
+              loadLocalData();
+              renderTasks();
+              updateDashboard();
+            } catch (error) {
+              alert("Error signing out: " + error.message);
+            }
+          });
+        }
+
+        if (closeAuthModal) {
+          closeAuthModal.addEventListener("click", () => {
+            authModal.classList.remove("active");
+            document.getElementById("authError").classList.add("hidden");
+            authForm.reset();
+          });
+        }
+
+        if (authForm) {
+          authForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const email = document.getElementById("authEmail").value;
+            const password = document.getElementById("authPassword").value;
+            const errorDiv = document.getElementById("authError");
+
+            try {
+              errorDiv.classList.add("hidden");
+              
+              if (isLoginMode) {
+                await signIn(email, password);
+              } else {
+                await signUp(email, password);
+                alert("Account created! Please check your email to verify your account, then login.");
+              }
+              
+              authModal.classList.remove("active");
+              authForm.reset();
+              await checkAuthState();
+              updateAuthUI();
+              if (isAuthenticated) {
+                await loadRemoteTasks();
+              }
+            } catch (error) {
+              errorDiv.textContent = error.message || "Authentication failed";
+              errorDiv.classList.remove("hidden");
+            }
+          });
+        }
+
+        if (authToggleBtn) {
+          authToggleBtn.addEventListener("click", () => {
+            isLoginMode = !isLoginMode;
+            updateAuthModal();
+          });
+        }
+
+        if (googleAuthBtn) {
+          googleAuthBtn.addEventListener("click", async () => {
+            try {
+              await signInWithOAuth("google");
+            } catch (error) {
+              const errorDiv = document.getElementById("authError");
+              errorDiv.textContent = error.message || "OAuth sign-in failed";
+              errorDiv.classList.remove("hidden");
+            }
+          });
+        }
+
+        if (githubAuthBtn) {
+          githubAuthBtn.addEventListener("click", async () => {
+            try {
+              await signInWithOAuth("github");
+            } catch (error) {
+              const errorDiv = document.getElementById("authError");
+              errorDiv.textContent = error.message || "OAuth sign-in failed";
+              errorDiv.classList.remove("hidden");
+            }
+          });
+        }
+
+        // Close modal when clicking outside
+        if (authModal) {
+          authModal.addEventListener("click", (e) => {
+            if (e.target === authModal) {
+              authModal.classList.remove("active");
+              document.getElementById("authError").classList.add("hidden");
+              authForm.reset();
+            }
+          });
+        }
+      }
+
+      function updateAuthModal() {
+        const modalTitle = document.getElementById("authModalTitle");
+        const submitBtn = document.getElementById("authSubmitBtn");
+        const submitText = document.getElementById("authSubmitText");
+        const toggleText = document.getElementById("authToggleText");
+        const toggleBtn = document.getElementById("authToggleBtn");
+
+        if (isLoginMode) {
+          if (modalTitle) modalTitle.textContent = "Login";
+          if (submitText) submitText.textContent = "Login";
+          if (toggleText) toggleText.textContent = "Don't have an account?";
+          if (toggleBtn) toggleBtn.textContent = "Sign up";
+        } else {
+          if (modalTitle) modalTitle.textContent = "Sign Up";
+          if (submitText) submitText.textContent = "Sign Up";
+          if (toggleText) toggleText.textContent = "Already have an account?";
+          if (toggleBtn) toggleBtn.textContent = "Login";
+        }
       }
 
       function handleTaskSubmit(e) {
@@ -923,13 +1245,20 @@
 
       function saveTasks() {
         try {
+          // Always save to localStorage (backup for authenticated users, primary for guests)
           localStorage.setItem("tasks", JSON.stringify(tasks));
           localStorage.setItem("archivedTasks", JSON.stringify(archivedTasks));
-          persistTasksToSupabase();
+          
+          // If authenticated, also save to Supabase
+          if (isAuthenticated && supabaseClient) {
+            persistTasksToSupabase();
+          }
         } catch (error) {
           console.error("Error saving tasks:", error);
-          // Try to persist to Supabase even if localStorage fails
-          persistTasksToSupabase();
+          // Try to persist to Supabase even if localStorage fails (if authenticated)
+          if (isAuthenticated && supabaseClient) {
+            persistTasksToSupabase();
+          }
         }
       }
 

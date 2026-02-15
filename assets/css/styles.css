@@ -293,3 +293,66 @@
       .scrollbar-thin::-webkit-scrollbar-thumb:hover {
         background: #555;
       }
+
+      /* Authentication UI Styles */
+      #authStatus {
+        transition: all 0.3s ease;
+      }
+
+      #loginBtn, #logoutBtn {
+        transition: all 0.2s ease;
+      }
+
+      #loginBtn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(139, 92, 246, 0.3);
+      }
+
+      #logoutBtn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
+      }
+
+      #authError {
+        animation: shake 0.5s;
+      }
+
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-10px); }
+        75% { transform: translateX(10px); }
+      }
+
+      .dark-mode #authError {
+        background-color: #7f1d1d;
+        border-color: #991b1b;
+        color: #fca5a5;
+      }
+
+      #googleAuthBtn:hover {
+        border-color: #4285f4;
+        background-color: #f8f9fa;
+      }
+
+      .dark-mode #googleAuthBtn {
+        background-color: #1e293b;
+        border-color: #475569;
+        color: #e2e8f0;
+      }
+
+      .dark-mode #googleAuthBtn:hover {
+        background-color: #334155;
+        border-color: #64748b;
+      }
+
+      #githubAuthBtn:hover {
+        background-color: #1f2937;
+      }
+
+      .dark-mode #githubAuthBtn {
+        background-color: #0f172a;
+      }
+
+      .dark-mode #githubAuthBtn:hover {
+        background-color: #1e293b;
+      }
