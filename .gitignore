@@ -2,3 +2,6 @@
 assets/js/env.js
 node_modules
 scripts/generate-env.js
+SUPABASE_SECURITY_GUIDE.md
+supabase-migration.sql
+PRODUCTION_CHECKLIST.md
